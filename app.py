@@ -9,7 +9,6 @@ from models import Galleta
 import forms
 
 
-
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
 csrf=CSRFProtect()
@@ -31,7 +30,7 @@ def login():
 @app.route("/menuUsuario")
 def menuUsuario():
     create_form = forms.GalletaForm(request.form)
-    galletas = Galleta.query.all()  # Obtiene todas las galletas de la base de datos
+    galletas = Galleta.query.all()
     return render_template("menuUsuario.html", form=create_form, galletas=galletas)
 
 
