@@ -1,18 +1,20 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, blueprints
 from flask import flash
 from flask_wtf.csrf import CSRFProtect
 from flask import g
-from config import DevelopmentConfig
-from models import db
-from models import Galleta
-from models import Galleta
-import forms
+from models.config import DevelopmentConfig
+from models.models import db
+from models.models import Galleta
+from models.forms import GalletaForm
+import models.forms
+from controller.menuUsuario import menuGalleta
 
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
 csrf=CSRFProtect()
 
+app.register_blueprint(menuGalleta)
 
 @app.route('/')
 def index():
@@ -27,11 +29,6 @@ def conocenos():
 def login():
     return render_template("login.html")
 
-@app.route("/menuUsuario")
-def menuUsuario():
-    create_form = forms.GalletaForm(request.form)
-    galletas = Galleta.query.all()
-    return render_template("menuUsuario.html", form=create_form, galletas=galletas)
 
 
 @app.route("/registrarClientes", methods=["GET", "POST"])
