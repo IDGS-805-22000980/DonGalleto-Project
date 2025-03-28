@@ -62,9 +62,14 @@ class Produccion(db.Model):
     __tablename__ = 'produccion'
     idProduccion = db.Column(db.Integer, primary_key=True, autoincrement=True)
     idReceta = db.Column(db.Integer, db.ForeignKey('recetas.idReceta', ondelete="CASCADE"), nullable=False)
-    fechaCaducidad = db.Column(db.Integer, db.ForeignKey('usuarios.idUsuario', ondelete="CASCADE"), nullable=False)
-    fechaProduccion = db.Column(db.Date, nullable=False)
-    Receta = db.relationship('Receta', backref=db.backref('produccion', cascade="all, delete-orphan"))
+    idUsuario = db.Column(db.Integer, db.ForeignKey('usuarios.idUsuario'), nullable=False)
+    fechaProduccion = db.Column(db.DateTime, nullable=False, default=datetime.now)
+    fechaCaducidad = db.Column(db.DateTime, nullable=False)
+    cantidadProducida = db.Column(db.Integer, nullable=False)
+    # Relación correctamente definida
+    receta = db.relationship('Receta', backref='producciones')
+    usuario = db.relationship('Usuario')
+    
 
 # Modelo de Inventario Galletas
 class InventarioGalletas(db.Model):
@@ -115,3 +120,40 @@ class Mermas(db.Model):
     idIngrediente = db.Column(db.Integer, db.ForeignKey('inventario.idInventario', ondelete="SET NULL"))
     cantidad = db.Column(db.Numeric(10, 2), nullable=False)
     fecha = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+
+class Pedido(db.Model):
+    __tablename__ = 'pedidos'
+
+    idPedido = db.Column(db.Integer, primary_key=True)
+    idUsuario = db.Column(db.Integer, db.ForeignKey('usuarios.idUsuario'), nullable=False)
+    fechaPedido = db.Column(db.DateTime, default=datetime.utcnow)
+    estado = db.Column(db.Enum('Pendiente', 'En proceso', 'Listo para recoger', 'Entregado', 'Cancelado'), default='Pendiente')
+    direccionEntrega = db.Column(db.String(255), nullable=False)
+    telefonoContacto = db.Column(db.String(20), nullable=False)
+    notas = db.Column(db.Text)
+    total = db.Column(db.Numeric(10, 2), nullable=False)
+
+    usuario = db.relationship('Usuario', backref='pedidos')
+    detalles_pedido = db.relationship('DetallePedido', back_populates='pedido')
+
+class DetallePedido(db.Model):
+    __tablename__ = 'detalle_pedido'
+    idDetallePedido = db.Column(db.Integer, primary_key=True)
+    idPedido = db.Column(db.Integer, db.ForeignKey('pedidos.idPedido'), nullable=False)
+    idGalleta = db.Column(db.Integer, db.ForeignKey('inventarioGalletas.idGalleta'), nullable=False)
+    cantidad = db.Column(db.Integer, nullable=False)
+    precioUnitario = db.Column(db.Numeric(10, 2), nullable=False)
+    subtotal = db.Column(db.Numeric(10, 2), nullable=False)
+
+    pedido = db.relationship('Pedido', back_populates='detalles_pedido')
+
+class SeguimientoPedidos(db.Model):
+    __tablename__ = 'seguimiento_pedidos'  # Es buena práctica definirlo
+    id = db.Column(db.Integer, primary_key=True)
+    idPedido = db.Column(db.Integer, db.ForeignKey('pedidos.idPedido'), nullable=False)  # Corregido
+    estadoAnterior = db.Column(db.String(50), nullable=False)
+    estadoNuevo = db.Column(db.String(50), nullable=False)
+    comentarios = db.Column(db.Text)
+    fechaRegistro = db.Column(db.DateTime, default=datetime.utcnow)
+    pedido = db.relationship('Pedido', backref=db.backref('seguimientos', lazy=True))  # Relación correcta

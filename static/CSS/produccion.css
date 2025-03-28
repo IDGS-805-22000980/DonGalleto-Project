@@ -1,0 +1,39 @@
+.estado-pendiente {
+    background-color: #FF0000;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.estado-en-proceso {
+    background-color: #FFFF00;
+    color: black;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.estado-listo-para-recoger {
+    background-color: #008000;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.estado-entregado {
+    background-color: #0000FF;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.estado-cancelado {
+    background-color: #808080;
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+h1 {
+    font-family: "Oleo Script", sans-serif;
+    text-align: left;
+}

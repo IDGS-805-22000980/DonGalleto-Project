@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>Galletería/Conócenos</title>
+    <title>Galletería</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="Author" content="Alejandra Hernandez Sauceda" />
@@ -25,8 +25,15 @@
             <h4>DeliCookie</h4>
         </div>
         <a href="../MenuGalletas/index.html"><i class="mdi mdi-menu"></i><span>Menú</span></a>
-        <a href="../Ventas/index.html"><i class="mdi mdi-cash-multiple"></i><span>Ventas</span></a>
-        <a href="{{ url_for('inventarioTerminado.inventario') }}"><i class="mdi mdi-cookie"></i><span>Inventario Galletas</span></a>
+
+        <a href="{{ url_for('chefCocinero.produccion') }}">
+            <i class="mdi mdi-food-croissant"></i><span>Producción</span>
+        </a>
+
+
+
+        <a href="{{ url_for('inventarioTerminado.inventario') }}"><i class="mdi mdi-cookie"></i><span>Inventario
+                Galletas</span></a>
         <a href="../../../users.html" class="btn btn-danger fixed-bottom-btn"><i class="bi bi-box-arrow-right"></i>
             Salir</a>
     </div>

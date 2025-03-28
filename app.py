@@ -10,6 +10,7 @@ from models.forms import GalletaForm
 import models.forms
 from controller.menuUsuario import menuGalleta
 from controller.inventario import inventarioTerminado
+from controller.cocinero import chefCocinero
 
 
 app = Flask(__name__)
@@ -18,6 +19,8 @@ csrf=CSRFProtect()
 
 app.register_blueprint(menuGalleta)
 app.register_blueprint(inventarioTerminado)
+app.register_blueprint(chefCocinero)
+
 
 @app.route('/')
 def index():

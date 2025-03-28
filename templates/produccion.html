@@ -1,0 +1,55 @@
+{% extends "layoutCocinero.html" %}
+{% import "_macros.html" as macros %}
+
+{% block container %}
+<link rel="stylesheet" href="../static/CSS/produccion.css">
+<h1 <i class="bi bi-cookie"></i>    Producción de Galletas</h1>
+
+<table class="table" style="text-align: center;">
+    <thead>
+        <tr>
+            <th>ID Pedido</th>
+            <th>Cantidad de Galletas</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for pedido in pedidos %}
+        <tr>
+            <td>{{ pedido.idPedido }}</td>
+            <td>
+                {% for detalle in pedido.detalles_pedido %}
+                {{ detalle.cantidad }}
+                {% endfor %}
+            </td>
+            <td>
+                <span class="badge estado-{{ pedido.estado | lower | replace(' ', '-') }}">{{ pedido.estado }}</span>
+            </td>
+            <td>
+                <form method="post" action="{{ url_for('chefCocinero.cambiar_estado') }}">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="idPedido" value="{{ pedido.idPedido }}">
+                    <select name="nuevoEstado" class="form-select">
+                        <option value="Pendiente" {% if pedido.estado=='Pendiente' %}selected{% endif %}>Pendiente
+                        </option>
+                        <option value="En proceso" {% if pedido.estado=='En proceso' %}selected{% endif %}>En proceso
+                        </option>
+                        <option value="Listo para recoger" {% if pedido.estado=='Listo para recoger' %}selected{% endif
+                            %}>Listo para recoger</option>
+                        <option value="Entregado" {% if pedido.estado=='Entregado' %}selected{% endif %}>Entregado
+                        </option>
+                        <option value="Cancelado" {% if pedido.estado=='Cancelado' %}selected{% endif %}>Cancelado
+                        </option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                </form>
+
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+{% endblock %}
