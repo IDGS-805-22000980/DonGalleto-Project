@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block container %}
+
+<div class="container py-5">
+    <h2 class="text-center mb-4">Panel de Ventas</h2>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-list-check fs-1 text-primary"></i>
+                    <h5 class="card-title mt-3">Gestión de Pedidos</h5>
+                    <p class="card-text">Administra y actualiza el estado de los pedidos</p>
+                    <a href="{{ url_for('ventas.listar_pedidos') }}" class="btn btn-primary">
+                        Ver Pedidos
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-people fs-1 text-success"></i>
+                    <h5 class="card-title mt-3">Clientes</h5>
+                    <p class="card-text">Administra la información de clientes</p>
+                    <a href="#" class="btn btn-success" disabled>
+                        Próximamente
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-graph-up fs-1 text-info"></i>
+                    <h5 class="card-title mt-3">Reportes</h5>
+                    <p class="card-text">Genera reportes de ventas</p>
+                    <a href="#" class="btn btn-info" disabled>
+                        Próximamente
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

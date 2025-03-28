@@ -2,19 +2,20 @@
 {% block container %}
 <link rel="stylesheet" href="../static/CSS/login.css" />
 
-<div class="container d-flex justify-content-center align-items-center"style="height: 70vh;">
+<div class="container d-flex justify-content-center align-items-center" style="height: 70vh;">
     <div class="card" style="width: 400px;">
         <div class="card-body">
             <h5 class="card-title text-center">Inicio de sesión</h5>
-            <form>
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
-                    <label for="exampleInputUser " class="form-label">Usuario</label>
-                    <input type="text" class="form-control" id="exampleInputUser " aria-describedby="userHelp" required>
-                    <div id="userHelp" class="form-text">Introduce tu nombre de usuario.</div>
+                    <label for="email" class="form-label">Email</label>
+                    {{ form.email(class="form-control", id="email") }}
+                    <div class="form-text">Introduce tu email.</div>
                 </div>
                 <div class="mb-3">
-                    <label for="exampleInputPassword1" class="form-label">Contraseña</label>
-                    <input type="password" class="form-control" id="exampleInputPassword1" required>
+                    <label for="password" class="form-label">Contraseña</label>
+                    {{ form.password(class="form-control", id="password") }}
                 </div>
                 <div class="mb-3 form-check">
                     <a href="/registrarClientes">¿No tienes cuenta? Regístrate</a>

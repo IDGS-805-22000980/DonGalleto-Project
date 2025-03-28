@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+{% block container %}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Listado de Pedidos</h2>
+        
+        <div class="dropdown">
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown">
+                {% if estado_actual == 'all' %}Todos los estados{% else %}Estado: {{ estado_actual }}{% endif %}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('ventas.listar_pedidos') }}">Todos</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('ventas.listar_pedidos', estado='Pendiente') }}">Pendientes</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('ventas.listar_pedidos', estado='En proceso') }}">En proceso</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('ventas.listar_pedidos', estado='Listo para recoger') }}">Listos para recoger</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('ventas.listar_pedidos', estado='Entregado') }}">Entregados</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('ventas.listar_pedidos', estado='Cancelado') }}">Cancelados</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pedido in pedidos %}
+                <tr>
+                    <td>{{ pedido.idPedido }}</td>
+                    <td>{{ pedido.usuario.nombre }}</td>
+                    <td>{{ pedido.fechaPedido.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>${{ "%.2f"|format(pedido.total) }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if pedido.estado == 'Pendiente' %}bg-warning text-dark
+                            {% elif pedido.estado == 'En proceso' %}bg-info
+                            {% elif pedido.estado == 'Listo para recoger' %}bg-primary
+                            {% elif pedido.estado == 'Entregado' %}bg-success
+                            {% else %}bg-danger{% endif %}">
+                            {{ pedido.estado }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('ventas.detalle_pedido', id=pedido.idPedido) }}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Ver
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center">No hay pedidos registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
