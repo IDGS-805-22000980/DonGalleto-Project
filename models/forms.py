@@ -6,7 +6,9 @@ from wtforms import validators
 from wtforms.validators import DataRequired
 
 class GalletaForm(FlaskForm):
-    nombre = StringField('Nombre', validators=[DataRequired()])
-    precio_por_pieza = IntegerField('Precio por pieza', validators=[DataRequired()])
-    precio_por_gramo = IntegerField('Precio por gramo', validators=[DataRequired()])
-    cantidadGalletas = IntegerField('Cantidad de galletas', validators=[DataRequired()])
+    nombre_receta = StringField('Nombre', validators=[DataRequired()])
+    descripcion = StringField('Descripción', validators=[DataRequired()])
+    cantidad_galleta_producida = IntegerField('Cantidad de Galletas producidas', validators=[DataRequired()])
+    dias_caducidad = IntegerField('Dias de caducidad', validators=[DataRequired()])
+    inventario = IntegerField('Inventario', validators=[DataRequired()])
+    

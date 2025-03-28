@@ -1,19 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, Blueprint
-from flask import flash
+from flask import Flask, render_template, request, Blueprint, flash
 from flask_wtf.csrf import CSRFProtect
-from flask import g
-from models.config import DevelopmentConfig
-from models.models import db
-from models.models import Galleta
+from models.models import db, Receta, InventarioGalletas
 from models.forms import GalletaForm
-import models.forms
-
 
 menuGalleta = Blueprint('menuGalleta', __name__)
-csrf=CSRFProtect()
+csrf = CSRFProtect()
 
-@menuGalleta.route("/menuUsuario")
+@menuGalleta.route("/menuUsuario", methods=['GET'])
 def menuUsuario():
-    create_form = models.forms.GalletaForm(request.form)
-    galletas = Galleta.query.all()
-    return render_template("menuUsuario.html", form=create_form, galletas=galletas)
+    try:
+        form = GalletaForm()
+        galletas = Receta.query.all()
+        return render_template("menuUsuario.html", form=form, galletas=galletas)
+    except Exception as e:
+        flash("Error al cargar las galletas: " + str(e), "danger")
+        return render_template("menuUsuario.html", form=form, galletas=[])

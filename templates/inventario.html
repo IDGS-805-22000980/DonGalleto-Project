@@ -1,0 +1,32 @@
+<!--Inventario de producto terminado
+inventario.html-->
+{% extends "layoutCocinero.html" %}
+
+{% block container %}
+
+<div class="container py-5">
+    <h2 class="text-center mb-4">Inventario de Galletas</h2>
+    <br>
+    <table class="table table-striped" style="text-align: center;">
+        <thead>
+            <tr>
+                <th>Nombre de la Receta</th>
+                <th>Fecha de Producción</th>
+                <th>Fecha de Caducidad</th>
+                <th>Cantidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in inventario %}
+            <tr>
+                <td>{{ item.receta.nombreReceta }}</td> <!-- Nombre de la receta -->
+                <td>{{ item.fechaProduccion  }}</td> <!-- Fecha de producción -->
+                <td>{{ item.fechaProduccion  }}</td> <!-- Fecha de caducidad -->
+                <td>{{ item.cantidad }}</td> <!-- Cantidad -->
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
