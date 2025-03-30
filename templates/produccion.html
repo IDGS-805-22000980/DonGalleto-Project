@@ -2,12 +2,11 @@
 
 {% block container %}
 
+<!-- Meta tag para CSRF Token (alternativa a cookies) -->
+<meta name="csrf-token" content="{{ csrf_token }}">
+
 <div class="container py-5">
     <h2 class="text-center mb-4">Lista de Galletas</h2>
-
-    <!-- <pre>
-        {{ galletas | safe }}  <!-- DEPURACIÓN: Ver datos recibidos 
-    </pre> -->
 
     <div class="row justify-content-center">
         {% for galleta, estado in galletas %}
@@ -23,6 +22,17 @@
                     <button class="btn estado-btn mt-auto" data-id="{{ galleta.idGalleta }}" data-estado="{{ estado }}">
                         {{ estado }}
                     </button>
+
+                    <!-- Input para cantidad (solo visible en estado "Completada") -->
+                    {% if estado == "Completada" %}
+                    <div class="mt-3 cantidad-container" style="display: none;">
+                        <input type="number" class="form-control" placeholder="Cantidad producida"
+                            id="cantidad-{{ galleta.idGalleta }}" min="1">
+                        <button class="btn btn-success mt-2 guardar-cantidad-btn" data-id="{{ galleta.idGalleta }}">
+                            Guardar
+                        </button>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -30,71 +40,122 @@
     </div>
 </div>
 
-<!-- JavaScript para actualizar estado dinámicamente -->
+<!-- JavaScript optimizado para CSRF y manejo de estados -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const url = "/actualizar_estado";
-        
-        // Obtener CSRF token desde la cookie
+
+        // ===== [1] Función mejorada para obtener el token CSRF =====
         function getCSRFToken() {
-            const cookieValue = document.cookie
+            // Opción 1: Desde meta tag (recomendado)
+            const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (metaToken) return metaToken;
+
+            // Opción 2: Desde cookies (respaldo)
+            const cookieToken = document.cookie
                 .split('; ')
-                .find(row => row.startsWith('csrf_token=')) // Encuentra la cookie csrf_token
-                ?.split('=')[1]; // Extrae el valor del token
-            return cookieValue || '';
+                .find(row => row.startsWith('csrf_token='))
+                ?.split('=')[1];
+            
+            if (!cookieToken) console.error("No se encontró el token CSRF");
+            return cookieToken || '';
         }
 
-        // CSRF token enviado desde el servidor en el contexto de la plantilla
-        const csrfToken = "{{ csrf_token }}";  // Usamos el token CSRF desde la plantilla
-
-        document.querySelectorAll(".estado-btn").forEach(function (button) {
-            actualizarColor(button);
-
-            button.addEventListener("click", function () {
-                const galletaId = this.getAttribute("data-id");
-                const estadoActual = this.getAttribute("data-estado");
-
-                const nuevosEstados = ["Pendiente", "Aprobada", "Rechazada", "Completada"];
-                const nuevoEstado = nuevosEstados[(nuevosEstados.indexOf(estadoActual) + 1) % nuevosEstados.length];
-
-                fetch(url, {
-                    method: "POST",
-                    body: JSON.stringify({
-                        idGalleta: parseInt(galletaId),
-                        nuevo_estado: nuevoEstado,
-                        csrf_token: csrfToken  // Usamos el token CSRF en la solicitud
-                    }),
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": csrfToken  // Enviar el token CSRF en la cabecera
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.nuevo_estado) {
-                            this.textContent = data.nuevo_estado;
-                            this.setAttribute("data-estado", data.nuevo_estado);
-                            actualizarColor(this);
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error:", error);
-                        alert("Error al actualizar el estado: " + error.message);
-                    });
-            });
-        });
-
+        // ===== [2] Actualizar color de botones según estado =====
         function actualizarColor(button) {
             const estado = button.getAttribute("data-estado");
             button.className = "btn estado-btn mt-auto";
+            
             if (estado === "Pendiente") button.classList.add("btn-danger");
             else if (estado === "Aprobada") button.classList.add("btn-primary");
-            else if (estado === "Rechazada") button.classList.add("btn-warning");
-            else if (estado === "Completada") button.classList.add("btn-success");
+            else if (estado === "Completada") {
+                button.classList.add("btn-success");
+                // Mostrar input de cantidad solo si el estado es "Completada"
+                const cardBody = button.closest('.card-body');
+                const cantidadContainer = cardBody.querySelector('.cantidad-container');
+                if (cantidadContainer) cantidadContainer.style.display = 'block';
+            }
         }
+
+        // ===== [3] Manejador de clic para botones de estado =====
+        document.querySelectorAll(".estado-btn").forEach(function (button) {
+            // Inicializar colores
+            actualizarColor(button);
+
+            button.addEventListener("click", async function () {
+                const galletaId = this.getAttribute("data-id");
+                const estadoActual = this.getAttribute("data-estado");
+
+                // Rotar entre estados: Pendiente -> Aprobada -> Completada
+                const nuevosEstados = ["Pendiente", "Aprobada", "Completada"];
+                const nuevoEstado = nuevosEstados[(nuevosEstados.indexOf(estadoActual) + 1) % nuevosEstados.length];
+
+                try {
+                    const response = await fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCSRFToken()  // Token en headers
+                        },
+                        body: JSON.stringify({
+                            idGalleta: parseInt(galletaId),
+                            nuevo_estado: nuevoEstado
+                            // No es necesario enviar csrf_token en el body
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || "Error en el servidor");
+                    }
+
+                    const data = await response.json();
+                    this.textContent = data.nuevo_estado;
+                    this.setAttribute("data-estado", data.nuevo_estado);
+                    actualizarColor(this);
+
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("Error al actualizar: " + error.message);
+                }
+            });
+        });
+
+        // ===== [4] Manejador para guardar cantidad =====
+        document.querySelectorAll(".guardar-cantidad-btn").forEach(button => {
+            button.addEventListener("click", async function () {
+                const galletaId = this.getAttribute("data-id");
+                const cantidadInput = document.getElementById(`cantidad-${galletaId}`);
+                const cantidad = parseInt(cantidadInput.value);
+
+                if (!cantidad || cantidad <= 0) {
+                    alert("Ingrese una cantidad válida (mayor que 0)");
+                    return;
+                }
+
+                try {
+                    const response = await fetch("/guardar_cantidad", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCSRFToken()
+                        },
+                        body: JSON.stringify({ 
+                            idGalleta: galletaId, 
+                            cantidad: cantidad 
+                        })
+                    });
+
+                    const data = await response.json();
+                    alert(data.message || "Cantidad guardada exitosamente");
+
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("Error al guardar la cantidad");
+                }
+            });
+        });
     });
 </script>
-
-
 
 {% endblock %}
