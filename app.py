@@ -2,12 +2,8 @@
 from flask import Flask, render_template, request, redirect, url_for, blueprints
 from flask import flash
 from flask_wtf.csrf import CSRFProtect
-from flask import g
 from models.config import DevelopmentConfig
 from models.models import db
-from models.models import InventarioGalletas, Receta
-from models.forms import GalletaForm
-import models.forms
 from controller.menuUsuario import menuGalleta
 from controller.inventario import inventarioTerminado
 from controller.cocinero import chefCocinero

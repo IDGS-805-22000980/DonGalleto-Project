@@ -1,49 +1,52 @@
-from flask import Flask, render_template, request, Blueprint, flash, redirect, url_for
-from flask_wtf.csrf import CSRFProtect
-from models.models import db, Receta, InventarioGalletas, Produccion, Ingredientes, IngredienteReceta, Inventario, Pedido,DetallePedido, SeguimientoPedidos
-from models.forms import ProduccionForm, PedidoForm, CambioEstadoForm
-from datetime import datetime, timedelta
-from sqlalchemy.orm import joinedload
+from flask import Flask, render_template, request, Blueprint, jsonify, make_response
+from models.models import db, Galletas, EstadoGalleta
+from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
+from werkzeug.exceptions import BadRequest
 
 chefCocinero = Blueprint('chefCocinero', __name__)
 
-
 @chefCocinero.route('/produccion')
 def produccion():
-    pedidos = Pedido.query.all()
-    form = CambioEstadoForm()
-    for pedido in pedidos:
-        print(f"Pedido ID en Flask: {pedido.idPedido}")  # DEBUG
-    return render_template('produccion.html', pedidos=pedidos, form=form)
-
-
-@chefCocinero.route('/cambiar_estado', methods=['POST'])
-def cambiar_estado():
+    galletas = (
+        db.session.query(Galletas, EstadoGalleta.estatus)
+        .join(EstadoGalleta, Galletas.idGalleta == EstadoGalleta.idGalletaFK)
+        .all()
+    )
     
-    id_pedido = request.form.getlist("idPedido")
-    nuevo_estado = request.form.get("nuevoEstado")
+    response = make_response(render_template('produccion.html', galletas=galletas, csrf_token=generate_csrf()))
+    response.set_cookie('csrf_token', generate_csrf(), httponly=True, samesite='Strict')
+    return response
 
-    print(f"ID Pedido recibido: {id_pedido}")  # Para ver cómo llega el valor
-    print(f"Nuevo estado recibido: {nuevo_estado}")
 
-    # Filtra valores vacíos
-    id_pedido = [x for x in id_pedido if x]  # Elimina valores vacíos
 
-    if not id_pedido:
-        flash("Pedido no encontrado", "danger")
-        return redirect(url_for('chefCocinero.produccion'))
-
-    id_pedido = id_pedido[0]  # Tomamos solo el primer valor
-    pedido = Pedido.query.get(id_pedido)
-
-    if not pedido:
-        flash("Pedido no encontrado en la base de datos", "danger")
-        return redirect(url_for('chefCocinero.produccion'))
-
-    pedido.estado = nuevo_estado
-    db.session.commit()
-
-    print(f"Estado actualizado en la base de datos: {pedido.estado}")
-
-    flash("Estado actualizado correctamente", "success")
-    return redirect(url_for('chefCocinero.produccion'))
+@chefCocinero.route('/actualizar_estado', methods=['POST'])
+def actualizar_estado():
+    try:
+        csrf_token = request.headers.get('X-CSRFToken') or request.json.get('csrf_token')
+        if not csrf_token:
+            return jsonify({"error": "Token CSRF faltante"}), 400
+        validate_csrf(csrf_token)
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No se recibieron datos JSON"}), 400
+        required_fields = ['idGalleta', 'nuevo_estado']
+        if not all(field in data for field in required_fields):
+            return jsonify({"error": "Datos incompletos"}), 400
+        id_galleta = int(data['idGalleta'])
+        nuevo_estado = data['nuevo_estado']
+        if nuevo_estado not in ["Pendiente", "Aprobada", "Rechazada", "Completada"]:
+            return jsonify({"error": "Estado no válido"}), 400
+        estado_galleta = EstadoGalleta.query.filter_by(idGalletaFK=id_galleta).first()
+        if not estado_galleta:
+            return jsonify({"error": f"Galleta con ID {id_galleta} no encontrada"}), 404
+        estado_galleta.estatus = nuevo_estado
+        db.session.commit()
+        return jsonify({
+            "message": "Estado actualizado", 
+            "nuevo_estado": nuevo_estado,
+            "csrf_token": generate_csrf()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error interno: {str(e)}")  # Esto mostrará el error en la consola
+        return jsonify({"error": "Error interno del servidor"}), 500

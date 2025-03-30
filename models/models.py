@@ -1,159 +1,112 @@
-from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Numeric
 
 db = SQLAlchemy()
 
-# Modelo de Usuario
-class Usuario(db.Model):
-    __tablename__ = 'usuarios'
-    idUsuario = db.Column(db.Integer, primary_key=True, autoincrement=True)
+class Usuarios(db.Model):
+    __tablename__ = 'Usuarios'
+    idUsuario = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    rol = db.Column(db.Enum('Admin', 'Ventas', 'Cocina', 'Cliente', name='roles'), nullable=False)
-    
-    def __repr__(self):
-        return f'<Usuario {self.nombre}, Rol: {self.rol}>'
+    telefono = db.Column(db.String(20))
+    direccion = db.Column(db.Text)
+    rol = db.Column(db.Enum('Admin', 'Ventas', 'Cocina', 'Cliente'), nullable=False)
+    fechaRegistro = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-# Modelo de Insumos
-class Insumo(db.Model):
-    __tablename__ = 'insumos'
-    id_insumo = db.Column(db.Integer, primary_key=True, autoincrement=True)
+class Proveedores(db.Model):
+    __tablename__ = 'Proveedores'
+    idProveedor = db.Column(db.Integer, primary_key=True)
+    nombreProveedor = db.Column(db.String(255), nullable=False)
+    telefono = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    direccion = db.Column(db.Text)
+    fechaRegistro = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+class MateriasPrimas(db.Model):
+    __tablename__ = 'MateriasPrimas'
+    idMateriaPrima = db.Column(db.Integer, primary_key=True)
+    idProveedorFK = db.Column(db.Integer, db.ForeignKey('Proveedores.idProveedor'), nullable=False)
     nombre = db.Column(db.String(100), nullable=False)
-    unidad = db.Column(db.Enum('gramo', 'kilogramo', 'litro', 'mililitro', 'pieza', 'bulto', name='unidades_insumo'), nullable=False)
-    cantidad_disponible = db.Column(Numeric(10, 2), nullable=False, default=0)
-    merma = db.Column(Numeric(5, 2), nullable=False, default=0)
-    fechaCaducidad = db.Column(db.Date, nullable=False)
-    
-    def __repr__(self):
-        return f'<Insumo {self.nombre} ({self.cantidad_disponible} {self.unidad})>'
+    descripcion = db.Column(db.Text)
+    unidadMedida = db.Column(db.Enum('gramo', 'kilogramo', 'litro', 'mililitro', 'pieza', 'bulto'), nullable=False)
+    cantidadDisponible = db.Column(db.Numeric(10, 2), default=0, nullable=False)
+    cantidadMinima = db.Column(db.Numeric(10, 2), default=0, nullable=False)
+    precioCompra = db.Column(db.Numeric(10, 2), nullable=False)
+    porcentajeMerma = db.Column(db.Numeric(5, 2), default=0, nullable=False)
+    fechaCaducidad = db.Column(db.Date)
+    fechaUltimaCompra = db.Column(db.Date)
 
-# Modelo de Recetas
-class Receta(db.Model):
-    __tablename__ = 'recetas'
-    idReceta = db.Column(db.Integer, primary_key=True, autoincrement=True)
+class Recetas(db.Model):
+    __tablename__ = 'Recetas'
+    idReceta = db.Column(db.Integer, primary_key=True)
     nombreReceta = db.Column(db.String(100), nullable=False)
-    descripcion = db.Column(db.String(255), nullable=False)
-    cantidadGalletaProducida = db.Column(db.Integer, nullable=False)
+    descripcion = db.Column(db.Text)
+    cantidadGalletasProducidas = db.Column(db.Integer, nullable=False)
+    tiempoPreparacion = db.Column(db.Integer, nullable=False)
     diasCaducidad = db.Column(db.Integer, nullable=False)
+    activa = db.Column(db.Boolean, default=True)
 
-# Modelo de Ingredientes
-class Ingredientes(db.Model):
-    __tablename__ = 'ingredientes'
-    idIngrediente = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    nombreIngrediente = db.Column(db.String(100), nullable=False)
-    cantidadInventario = db.Column(db.Integer, nullable=False)
-    unidadMedida = db.Column(db.Enum('gramo', 'kilogramo', 'litro', 'mililitro', 'pieza', 'bulto', name='unidades_ingrediente'), nullable=False)
-    fechaCaducidad = db.Column(db.Date, nullable=False)
+class IngredientesReceta(db.Model):
+    __tablename__ = 'IngredientesReceta'
+    idIngredienteReceta = db.Column(db.Integer, primary_key=True)
+    idRecetaFK = db.Column(db.Integer, db.ForeignKey('Recetas.idReceta'), nullable=False)
+    idMateriaPrimaFK = db.Column(db.Integer, db.ForeignKey('MateriasPrimas.idMateriaPrima'), nullable=False)
+    cantidadNecesaria = db.Column(db.Numeric(10, 2), nullable=False)
+    observaciones = db.Column(db.Text)
 
-# Modelo de Ingrediente Receta
-class IngredienteReceta(db.Model):
-    __tablename__ = 'ingredienteReceta'
-    idIngredienteReceta = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    idReceta = db.Column(db.Integer, db.ForeignKey('recetas.idReceta', ondelete="CASCADE"), nullable=False)
-    idIngrediente = db.Column(db.Integer, db.ForeignKey('ingredientes.idIngrediente', ondelete="CASCADE"), nullable=False)
-    cantidadNecesaria = db.Column(db.Integer, nullable=False)
-    Receta = db.relationship('Receta', backref=db.backref('ingredientes', cascade="all, delete-orphan"))
-    Ingrediente = db.relationship('Ingredientes', backref=db.backref('recetas', cascade="all, delete-orphan"))
+class Galletas(db.Model):
+    __tablename__ = 'Galletas'
+    idGalleta = db.Column(db.Integer, primary_key=True)
+    idRecetaFK = db.Column(db.Integer, db.ForeignKey('Recetas.idReceta'), nullable=False)
+    nombre = db.Column(db.String(100), nullable=False)
+    descripcion = db.Column(db.Text)
+    activa = db.Column(db.Boolean, default=True)
 
-# Modelo de Produccion
-class Produccion(db.Model):
-    __tablename__ = 'produccion'
-    idProduccion = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    idReceta = db.Column(db.Integer, db.ForeignKey('recetas.idReceta', ondelete="CASCADE"), nullable=False)
-    idUsuario = db.Column(db.Integer, db.ForeignKey('usuarios.idUsuario'), nullable=False)
-    fechaProduccion = db.Column(db.DateTime, nullable=False, default=datetime.now)
-    fechaCaducidad = db.Column(db.DateTime, nullable=False)
-    cantidadProducida = db.Column(db.Integer, nullable=False)
-    # Relación correctamente definida
-    receta = db.relationship('Receta', backref='producciones')
-    usuario = db.relationship('Usuario')
-    
+class Presentaciones(db.Model):
+    __tablename__ = 'Presentaciones'
+    idPresentacion = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False)
+    descripcion = db.Column(db.Text)
 
-# Modelo de Inventario Galletas
+class PreciosGalletas(db.Model):
+    __tablename__ = 'PreciosGalletas'
+    idPrecioGalleta = db.Column(db.Integer, primary_key=True)
+    idGalletaFK = db.Column(db.Integer, db.ForeignKey('Galletas.idGalleta'), nullable=False)
+    idPresentacionFK = db.Column(db.Integer, db.ForeignKey('Presentaciones.idPresentacion'), nullable=False)
+    precio = db.Column(db.Numeric(10, 2), nullable=False)
+    db.UniqueConstraint(idGalletaFK, idPresentacionFK)
+
 class InventarioGalletas(db.Model):
-    __tablename__ = 'inventarioGalletas'
-    idGalleta = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    idReceta = db.Column(db.Integer, db.ForeignKey('recetas.idReceta', ondelete="CASCADE"), nullable=False)
+    __tablename__ = 'InventarioGalletas'
+    idInventarioGalleta = db.Column(db.Integer, primary_key=True)
+    idGalletaFK = db.Column(db.Integer, db.ForeignKey('Galletas.idGalleta'), nullable=False)
+    idPresentacionFK = db.Column(db.Integer, db.ForeignKey('Presentaciones.idPresentacion'), nullable=False)
+    cantidad = db.Column(db.Integer, default=0, nullable=False)
     fechaProduccion = db.Column(db.Date, nullable=False)
     fechaCaducidad = db.Column(db.Date, nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False)
-    tipo = db.Column(db.Enum('Pieza', 'Paquete 1kg', 'Paquete 700g', 'Kilogramos', 'Gramos', name='tipo_galleta'), nullable=False)
-    receta = db.relationship('Receta', backref=db.backref('inventario', cascade="all, delete-orphan"))
+    lote = db.Column(db.String(50))
+    disponible = db.Column(db.Boolean, default=True)
 
-# Modelo de Ventas
-class Ventas(db.Model):
-    __tablename__ = 'ventas'
-    idVenta = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    idUsuario = db.Column(db.Integer, db.ForeignKey('usuarios.idUsuario', ondelete="CASCADE"), nullable=False)
-    fechaVenta = db.Column(db.Date, nullable=False)
-    total = db.Column(db.Numeric(10, 2), nullable=False)
-    Usuario = db.relationship('Usuario', backref=db.backref('ventas', cascade="all, delete-orphan"))
-
-# Modelo Inventario
-class Inventario(db.Model):
-    __tablename__ = 'inventario'
-    idInventario = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    idIngrediente = db.Column(db.Integer, db.ForeignKey('ingredientes.idIngrediente', ondelete="CASCADE"), nullable=False)
-    cantidad = db.Column(db.Numeric(10, 2), nullable=False)
-    ingrediente = db.relationship('Ingredientes', backref=db.backref('inventarios', cascade="all, delete-orphan"))
-    detalles_venta = db.relationship('DetalleVenta', backref='inventario', cascade="all, delete-orphan")
-    mermas = db.relationship('Mermas', backref='inventario', cascade="all, delete-orphan")
-
-# Modelo Detalle Venta
-class DetalleVenta(db.Model):
-    __tablename__ = 'detalle_venta'
-    idDetalle = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    idVenta = db.Column(db.Integer, db.ForeignKey('ventas.idVenta', ondelete="CASCADE"), nullable=False)
-    idIngrediente = db.Column(db.Integer, db.ForeignKey('inventario.idInventario', ondelete="CASCADE"), nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False)
-    subtotal = db.Column(db.Numeric(10, 2), nullable=False)
-    venta = db.relationship('Ventas', backref=db.backref('detalles_venta', cascade="all, delete-orphan"))
-
-# Modelo Mermas
-class Mermas(db.Model):
-    __tablename__ = 'mermas'
-    idMerma = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    tipo = db.Column(db.Enum('Producto Dañado', 'Insumo Desperdiciado', 'Insumo Caduco', 'Galletas Caducas',
-                            name='tipo_merma'), nullable=False)
-    idIngrediente = db.Column(db.Integer, db.ForeignKey('inventario.idInventario', ondelete="SET NULL"))
-    cantidad = db.Column(db.Numeric(10, 2), nullable=False)
-    fecha = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    
-
-class Pedido(db.Model):
-    __tablename__ = 'pedidos'
-
+class Pedidos(db.Model):
+    __tablename__ = 'Pedidos'
     idPedido = db.Column(db.Integer, primary_key=True)
-    idUsuario = db.Column(db.Integer, db.ForeignKey('usuarios.idUsuario'), nullable=False)
-    fechaPedido = db.Column(db.DateTime, default=datetime.utcnow)
-    estado = db.Column(db.Enum('Pendiente', 'En proceso', 'Listo para recoger', 'Entregado', 'Cancelado'), default='Pendiente')
-    direccionEntrega = db.Column(db.String(255), nullable=False)
-    telefonoContacto = db.Column(db.String(20), nullable=False)
-    notas = db.Column(db.Text)
+    idClienteFK = db.Column(db.Integer, db.ForeignKey('Usuarios.idUsuario'), nullable=False)
+    fechaPedido = db.Column(db.DateTime, default=db.func.current_timestamp())
+    fechaEntrega = db.Column(db.Date)
     total = db.Column(db.Numeric(10, 2), nullable=False)
+    estado = db.Column(db.Enum('Pendiente', 'En Proceso', 'Listo', 'Entregado', 'Cancelado'), default='Pendiente')
+    observaciones = db.Column(db.Text)
 
-    usuario = db.relationship('Usuario', backref='pedidos')
-    detalles_pedido = db.relationship('DetallePedido', back_populates='pedido')
+class EstadoGalleta(db.Model):
+    __tablename__ = 'EstadoGalleta'
+    idEstado = db.Column(db.Integer, primary_key=True)
+    idGalletaFK = db.Column(db.Integer, db.ForeignKey('Galletas.idGalleta'), nullable=False)
+    estatus = db.Column(db.Enum('Pendiente', 'Aprobada', 'Rechazada', 'Completada'), nullable=False)
 
-class DetallePedido(db.Model):
-    __tablename__ = 'detalle_pedido'
-    idDetallePedido = db.Column(db.Integer, primary_key=True)
-    idPedido = db.Column(db.Integer, db.ForeignKey('pedidos.idPedido'), nullable=False)
-    idGalleta = db.Column(db.Integer, db.ForeignKey('inventarioGalletas.idGalleta'), nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False)
-    precioUnitario = db.Column(db.Numeric(10, 2), nullable=False)
-    subtotal = db.Column(db.Numeric(10, 2), nullable=False)
-
-    pedido = db.relationship('Pedido', back_populates='detalles_pedido')
-
-class SeguimientoPedidos(db.Model):
-    __tablename__ = 'seguimiento_pedidos'  # Es buena práctica definirlo
-    id = db.Column(db.Integer, primary_key=True)
-    idPedido = db.Column(db.Integer, db.ForeignKey('pedidos.idPedido'), nullable=False)  # Corregido
-    estadoAnterior = db.Column(db.String(50), nullable=False)
-    estadoNuevo = db.Column(db.String(50), nullable=False)
-    comentarios = db.Column(db.Text)
-    fechaRegistro = db.Column(db.DateTime, default=datetime.utcnow)
-    pedido = db.relationship('Pedido', backref=db.backref('seguimientos', lazy=True))  # Relación correcta
+class Tickets(db.Model):
+    __tablename__ = 'Tickets'
+    idTicket = db.Column(db.Integer, primary_key=True)
+    idVentaFK = db.Column(db.Integer, db.ForeignKey('Ventas.idVenta'), nullable=False)
+    contenido = db.Column(db.Text, nullable=False)
+    fechaGeneracion = db.Column(db.DateTime, default=db.func.current_timestamp())
+    codigoQR = db.Column(db.String(255))

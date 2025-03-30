@@ -1,55 +1,100 @@
 {% extends "layoutCocinero.html" %}
-{% import "_macros.html" as macros %}
 
 {% block container %}
-<link rel="stylesheet" href="../static/CSS/produccion.css">
-<h1 <i class="bi bi-cookie"></i>    Producción de Galletas</h1>
 
-<table class="table" style="text-align: center;">
-    <thead>
-        <tr>
-            <th>ID Pedido</th>
-            <th>Cantidad de Galletas</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for pedido in pedidos %}
-        <tr>
-            <td>{{ pedido.idPedido }}</td>
-            <td>
-                {% for detalle in pedido.detalles_pedido %}
-                {{ detalle.cantidad }}
-                {% endfor %}
-            </td>
-            <td>
-                <span class="badge estado-{{ pedido.estado | lower | replace(' ', '-') }}">{{ pedido.estado }}</span>
-            </td>
-            <td>
-                <form method="post" action="{{ url_for('chefCocinero.cambiar_estado') }}">
-                    {{ form.hidden_tag() }}
-                    <input type="hidden" name="idPedido" value="{{ pedido.idPedido }}">
-                    <select name="nuevoEstado" class="form-select">
-                        <option value="Pendiente" {% if pedido.estado=='Pendiente' %}selected{% endif %}>Pendiente
-                        </option>
-                        <option value="En proceso" {% if pedido.estado=='En proceso' %}selected{% endif %}>En proceso
-                        </option>
-                        <option value="Listo para recoger" {% if pedido.estado=='Listo para recoger' %}selected{% endif
-                            %}>Listo para recoger</option>
-                        <option value="Entregado" {% if pedido.estado=='Entregado' %}selected{% endif %}>Entregado
-                        </option>
-                        <option value="Cancelado" {% if pedido.estado=='Cancelado' %}selected{% endif %}>Cancelado
-                        </option>
-                    </select>
-                    <button type="submit" class="btn btn-primary">Actualizar</button>
-                </form>
+<div class="container py-5">
+    <h2 class="text-center mb-4">Lista de Galletas</h2>
 
-            </td>
-        </tr>
+    <!-- <pre>
+        {{ galletas | safe }}  <!-- DEPURACIÓN: Ver datos recibidos 
+    </pre> -->
+
+    <div class="row justify-content-center">
+        {% for galleta, estado in galletas %}
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm h-100">
+                <img src="../static/img/galleta.png" class="card-img-top" alt="{{ galleta.nombreGalleta }}"
+                    style="object-fit: cover; height: 200px;">
+                <div class="card-body d-flex flex-column text-center">
+                    <h2 class="card-title">{{ galleta.nombreGalleta }}</h2>
+                    <h5 class="card-text">{{ galleta.descripcion }}</h5>
+
+                    <!-- Botón para cambiar estado -->
+                    <button class="btn estado-btn mt-auto" data-id="{{ galleta.idGalleta }}" data-estado="{{ estado }}">
+                        {{ estado }}
+                    </button>
+                </div>
+            </div>
+        </div>
         {% endfor %}
-    </tbody>
-</table>
+    </div>
+</div>
+
+<!-- JavaScript para actualizar estado dinámicamente -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const url = "/actualizar_estado";
+        
+        // Obtener CSRF token desde la cookie
+        function getCSRFToken() {
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrf_token=')) // Encuentra la cookie csrf_token
+                ?.split('=')[1]; // Extrae el valor del token
+            return cookieValue || '';
+        }
+
+        // CSRF token enviado desde el servidor en el contexto de la plantilla
+        const csrfToken = "{{ csrf_token }}";  // Usamos el token CSRF desde la plantilla
+
+        document.querySelectorAll(".estado-btn").forEach(function (button) {
+            actualizarColor(button);
+
+            button.addEventListener("click", function () {
+                const galletaId = this.getAttribute("data-id");
+                const estadoActual = this.getAttribute("data-estado");
+
+                const nuevosEstados = ["Pendiente", "Aprobada", "Rechazada", "Completada"];
+                const nuevoEstado = nuevosEstados[(nuevosEstados.indexOf(estadoActual) + 1) % nuevosEstados.length];
+
+                fetch(url, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        idGalleta: parseInt(galletaId),
+                        nuevo_estado: nuevoEstado,
+                        csrf_token: csrfToken  // Usamos el token CSRF en la solicitud
+                    }),
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken  // Enviar el token CSRF en la cabecera
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.nuevo_estado) {
+                            this.textContent = data.nuevo_estado;
+                            this.setAttribute("data-estado", data.nuevo_estado);
+                            actualizarColor(this);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("Error al actualizar el estado: " + error.message);
+                    });
+            });
+        });
+
+        function actualizarColor(button) {
+            const estado = button.getAttribute("data-estado");
+            button.className = "btn estado-btn mt-auto";
+            if (estado === "Pendiente") button.classList.add("btn-danger");
+            else if (estado === "Aprobada") button.classList.add("btn-primary");
+            else if (estado === "Rechazada") button.classList.add("btn-warning");
+            else if (estado === "Completada") button.classList.add("btn-success");
+        }
+    });
+</script>
+
 
 
 {% endblock %}

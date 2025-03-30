@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="Author" content="Alejandra Hernandez Sauceda" />
+    <link rel="icon" type="image/png" href="Img/DeliCookieTransparent.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
@@ -14,7 +15,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../static/CSS/layoutCocinero.css" />
-    <link rel="icon" type="image/png" href="Img/DeliCookieTransparent.png">
+
 </head>
 
 <body>
@@ -24,19 +25,18 @@
             <img src="../static/img/DeliCookieWhite.png" alt="Logo" class="logo">
             <h4>DeliCookie</h4>
         </div>
-        <a href="../MenuGalletas/index.html"><i class="mdi mdi-menu"></i><span>Menú</span></a>
+        <a href="#"><i class="bi bi-menu-down"></i><span>Pedidos</span></a>
 
         <a href="{{ url_for('chefCocinero.produccion') }}">
             <i class="mdi mdi-food-croissant"></i><span>Producción</span>
         </a>
 
-
-
-        <a href="{{ url_for('inventarioTerminado.inventario') }}"><i class="mdi mdi-cookie"></i><span>Inventario
-                Galletas</span></a>
+        <a href="{{ url_for('inventarioTerminado.inventario') }}">
+            <i class="mdi mdi-cookie"></i><span>InventarioGalletas</span></a>
         <a href="../../../users.html" class="btn btn-danger fixed-bottom-btn"><i class="bi bi-box-arrow-right"></i>
             Salir</a>
     </div>
+
 
     <div class="content">
         <div class="flex-col items-center justify-center min-h-screen">
