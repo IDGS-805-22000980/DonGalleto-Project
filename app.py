@@ -3,12 +3,10 @@ from flask import flash
 from flask_wtf.csrf import CSRFProtect
 from flask import g
 from models.config import DevelopmentConfig
-from models.models import db
-from models.models import Usuario, Receta, Ingrediente, IngredienteReceta, InventarioGalletas, Pedido, DetallePedido
+from models.models import db, Usuarios, Galletas, Presentaciones, PreciosGalletas, Pedidos, DetallePedido, Ventas, DetalleVenta
 from models.forms import GalletaForm
 from werkzeug.security import generate_password_hash
 import models.forms
-from models.models import Usuario
 from controller.auth import auth_bp
 from controller.admin import admin_bp
 from controller.ventas import ventas_bp
@@ -46,18 +44,23 @@ def conocenos():
 
 if __name__ == "__main__":
     with app.app_context():
+        # Crear tablas si no existen
         db.create_all()
         
-        # Insertar usuario ventas de prueba (solo si no existe)
-        if not Usuario.query.filter_by(email="Ventas@example.com").first():
-            ventas_prueba = Usuario(
-                nombre="Don ventas",
-                email="ventas@example.com",
-                password=generate_password_hash("ventas123"),  # Contraseña hasheada
-                rol="Ventas"
-            )
-            db.session.add(ventas_prueba)
-            db.session.commit()
-            print("Usuario Cliente de prueba creado.")
+        # Verificar y crear usuario de prueba
+        try:
+            if not Usuarios.query.filter_by(email="ventas@example.com").first():
+                usuario_prueba = Usuarios(
+                    nombre="Ventas Demo",
+                    email="ventas@example.com",
+                    password=generate_password_hash("ventas1234"),
+                    rol="ventas"
+                )
+                db.session.add(usuario_prueba)
+                db.session.commit()
+                print("✅ Usuario de prueba creado")
+        except Exception as e:
+            print(f"Error al crear usuario de prueba: {str(e)}")
+            db.session.rollback()
     
     app.run(debug=True, port=5000)

@@ -1,75 +1,63 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models.models import db, Pedido, SeguimientoPedido, Usuario
+from models.models import db, Pedidos, DetallePedido, Galletas, InventarioGalletas
 from datetime import datetime
 from controller.auth import ventas_required
 
 ventas_bp = Blueprint('ventas', __name__)
 
-@ventas_bp.route("/menuVentas")
+@ventas_bp.route("/menuVentas", methods=["GET", "POST"])
 @ventas_required
 def menuVentas():
-    return render_template("menuVentas.html")
+    # Obtener todos los pedidos ordenados por fecha
+    pedidos = Pedidos.query.order_by(Pedidos.fechaPedido.desc()).all()
+    return render_template("ventas/menuVentas.html", pedidos=pedidos)
 
-@ventas_bp.route("/pedidos")
+@ventas_bp.route("/cambiar_estado/<int:pedido_id>", methods=["POST"])
 @ventas_required
-def listar_pedidos():
-    # Obtener todos los pedidos ordenados por fecha descendente
-    estado_filtro = request.args.get('estado', 'all')
+def cambiar_estado(pedido_id):
+    pedido = Pedidos.query.get_or_404(pedido_id)
+    nuevo_estado = request.form.get('nuevo_estado')
     
-    query = Pedido.query.order_by(Pedido.fechaPedido.desc())
-    
-    if estado_filtro != 'all':
-        query = query.filter_by(estado=estado_filtro)
-    
-    pedidos = query.all()
-    
-    return render_template("pedidos_ventas.html", 
-                        pedidos=pedidos,
-                        estado_actual=estado_filtro)
-
-@ventas_bp.route("/pedido/<int:id>")
-@ventas_required
-def detalle_pedido(id):
-    pedido = Pedido.query.get_or_404(id)
-    historial = SeguimientoPedido.query.filter_by(idPedido=id).order_by(SeguimientoPedido.fechaCambio.desc()).all()
-    return render_template("detalle_pedido_ventas.html", 
-                         pedido=pedido,
-                         historial=historial)
-
-@ventas_bp.route("/actualizar_estado/<int:id>", methods=["POST"])
-@ventas_required
-def actualizar_estado(id):
-    pedido = Pedido.query.get_or_404(id)
-    nuevo_estado = request.form.get('estado')
-    comentarios = request.form.get('comentarios', '').strip()
-    
-    if not nuevo_estado or nuevo_estado not in ['Pendiente', 'En proceso', 'Listo para recoger', 'Entregado', 'Cancelado']:
-        flash('Estado no válido', 'danger')
-        return redirect(url_for('ventas.detalle_pedido', id=id))
+    if not nuevo_estado:
+        flash('No se especificó un estado nuevo', 'error')
+        return redirect(url_for('ventas.menuVentas'))
     
     try:
-        # Registrar el cambio de estado
-        seguimiento = SeguimientoPedido(
-            idPedido=pedido.idPedido,
-            estadoAnterior=pedido.estado,
-            estadoNuevo=nuevo_estado,
-            idUsuarioCambio=session['user_id'],
-            comentarios=comentarios
-        )
-        
-        # Actualizar el estado del pedido
+        estado_anterior = pedido.estado
         pedido.estado = nuevo_estado
         
-        # Si el pedido se marca como Entregado o Cancelado, registrar hora
-        if nuevo_estado in ['Entregado', 'Cancelado']:
-            pedido.fechaFinalizacion = datetime.utcnow()
-        
-        db.session.add(seguimiento)
+        # Si cambiamos a "Entregado", actualizar inventario
+        if nuevo_estado == 'Entregado' and estado_anterior != 'Entregado':
+            actualizar_inventario(pedido)
+            
         db.session.commit()
-        
-        flash(f'Estado actualizado a {nuevo_estado}', 'success')
+        flash(f'Estado del pedido #{pedido_id} cambiado a {nuevo_estado}', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al actualizar estado: {str(e)}', 'danger')
+        flash(f'Error al cambiar estado: {str(e)}', 'error')
     
-    return redirect(url_for('ventas.detalle_pedido', id=id))
+    return redirect(url_for('ventas.menuVentas'))
+
+def actualizar_inventario(pedido):
+    """Actualiza el inventario cuando un pedido es marcado como entregado"""
+    for detalle in pedido.detalles:
+        # Buscar el inventario de la galleta en la presentación correspondiente
+        inventario = InventarioGalletas.query.filter_by(
+            idGalletaFK=detalle.idGalletaFK,
+            idPresentacionFK=detalle.idPresentacionFK
+        ).first()
+        
+        if inventario:
+            if inventario.cantidad >= detalle.cantidad:
+                inventario.cantidad -= detalle.cantidad
+            else:
+                raise ValueError(f'No hay suficiente inventario para {detalle.galleta.nombre} - {detalle.presentacion.nombre}')
+        else:
+            raise ValueError(f'No se encontró inventario para {detalle.galleta.nombre} - {detalle.presentacion.nombre}')
+
+
+@ventas_bp.route("/detalle_pedido/<int:pedido_id>")
+@ventas_required
+def detalle_pedido(pedido_id):
+    pedido = Pedidos.query.get_or_404(pedido_id)
+    return render_template("ventas/detalle_pedido.html", pedido=pedido)

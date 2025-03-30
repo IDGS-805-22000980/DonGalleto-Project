@@ -1,0 +1,154 @@
+{% extends "layout2.html" %}
+{% block container %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/pedidos.css') }}">
+
+<div class="container py-5">
+    <h2 class="text-center mb-4">Realizar Pedido</h2>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} mb-4">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <form method="POST" action="{{ url_for('cliente.menuCliente') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="row">
+            {% if galletas %}
+                {% for galleta_info in galletas %}
+                    {% set galleta = galleta_info[0] %}
+                    {% set presentacion = galleta_info[1] %}
+                    {% set precio = galleta_info[2] %}
+                    
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-sm">
+                            <img src="{{ url_for('static', filename='img/galleta.png') }}" 
+                                 class="card-img-top" 
+                                 alt="{{ galleta.nombre }}">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ galleta.nombre }}</h5>
+                                <p class="card-text">
+                                    <strong>Presentación:</strong> {{ presentacion.nombre }}<br>
+                                    <strong>Precio:</strong> ${{ "%.2f"|format(precio.precio) }}
+                                </p>
+                                
+                                <div class="input-group mb-3">
+                                    <input type="hidden" 
+                                           name="galleta_id" 
+                                           value="{{ galleta.idGalleta }}">
+                                    <input type="hidden" 
+                                           name="presentacion_id" 
+                                           value="{{ presentacion.idPresentacion }}">
+                                    
+                                    <button type="button" 
+                                            class="btn btn-outline-secondary" 
+                                            onclick="decrementar('{{ galleta.idGalleta }}_{{ presentacion.idPresentacion }}')">
+                                        -
+                                    </button>
+                                    <input type="number" 
+                                           id="cantidad_{{ galleta.idGalleta }}_{{ presentacion.idPresentacion }}"
+                                           name="cantidad_{{ galleta.idGalleta }}_{{ presentacion.idPresentacion }}"
+                                           class="form-control text-center" 
+                                           value="0" 
+                                           min="0" 
+                                           max="20">
+                                    <button type="button" 
+                                            class="btn btn-outline-secondary" 
+                                            onclick="incrementar('{{ galleta.idGalleta }}_{{ presentacion.idPresentacion }}')">
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-warning">
+                        No hay galletas disponibles en este momento.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Información del Pedido</h5>
+                        
+                        <div class="mb-3">
+                            <label for="fecha_entrega" class="form-label">Fecha de entrega deseada</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   id="fecha_entrega" 
+                                   name="fecha_entrega" 
+                                   required
+                                   min="{{ min_date }}"
+                                   max="{{ max_date }}"
+                                   value="">
+                            <small class="text-muted">Seleccione entre {{ min_date_display }} y {{ max_date_display }}</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones (opcional)</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Confirmar Pedido</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function incrementar(id) {
+    const input = document.getElementById(`cantidad_${id}`);
+    input.value = parseInt(input.value) + 1;
+}
+
+function decrementar(id) {
+    const input = document.getElementById(`cantidad_${id}`);
+    if (parseInt(input.value) > 0) {
+        input.value = parseInt(input.value) - 1;
+    }
+}
+
+// Validación de fecha en el cliente
+document.querySelector('form').addEventListener('submit', function(e) {
+    const fechaInput = document.getElementById('fecha_entrega');
+    const fechaSeleccionada = new Date(fechaInput.value);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    
+    const minDate = new Date(hoy);
+    minDate.setDate(hoy.getDate() + 2);
+    
+    const maxDate = new Date(hoy);
+    maxDate.setDate(hoy.getDate() + 30);
+    
+    // Validar fin de semana (sábado=6, domingo=0)
+    const diaSemana = fechaSeleccionada.getDay();
+    if (diaSemana === 0 || diaSemana === 6) {
+        e.preventDefault();
+        alert('No realizamos entregas los fines de semana. Por favor seleccione un día entre semana.');
+        return;
+    }
+    
+    if (fechaSeleccionada < minDate || fechaSeleccionada > maxDate) {
+        e.preventDefault();
+        alert('Por favor seleccione una fecha entre 2 y 30 días a partir de hoy');
+    }
+});
+</script>
+{% endblock %}

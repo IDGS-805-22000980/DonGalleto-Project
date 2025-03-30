@@ -1,9 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
-from models.models import db, Usuario, Pedido, DetallePedido, Galleta, SeguimientoPedido
-from datetime import datetime
-from werkzeug.security import check_password_hash
-from models.formsLogin import LoginForm
-import models.forms
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from models.models import db, Galletas, Presentaciones, PreciosGalletas, Pedidos, DetallePedido
+from datetime import datetime, timedelta
+from models.forms import PedidoForm
 from controller.auth import cliente_required
 
 cliente_bp = Blueprint('cliente', __name__)
@@ -11,150 +9,114 @@ cliente_bp = Blueprint('cliente', __name__)
 @cliente_bp.route("/menuCliente", methods=["GET", "POST"])
 @cliente_required
 def menuCliente():
-    galletas = Galleta.query.all()
-    return render_template("menuCliente.html", galletas=galletas)
-
-@cliente_bp.route("/agregar_al_carrito", methods=["POST"])
-@cliente_required
-def agregar_al_carrito():
-    try:
-        # Verificar y obtener datos JSON
-        if not request.is_json:
-            return jsonify({'success': False, 'error': 'Content-Type must be application/json'}), 415
-        
-        data = request.get_json()
-        galleta_id = data.get('galleta_id')
-        cantidad = int(data.get('cantidad', 1))
-        tipo_precio = data.get('tipo_precio', 'pieza')
-        
-        # Validar datos
-        if not galleta_id:
-            return jsonify({'success': False, 'error': 'Missing galleta_id'}), 400
-        
-        # Inicializar carrito si no existe
-        if 'carrito' not in session:
-            session['carrito'] = []
-        
-        # Buscar galleta en la base de datos
-        galleta = Galleta.query.get(galleta_id)
-        if not galleta:
-            return jsonify({'success': False, 'error': 'Galleta no encontrada'}), 404
-        
-        # Determinar precio según tipo
-        precio = float(galleta.precio_por_pieza if tipo_precio == 'pieza' else galleta.precio_por_gramo)
-        
-        # Buscar si ya existe en el carrito
-        carrito = session['carrito']
-        item_existente = next(
-            (item for item in carrito 
-             if item['galleta_id'] == galleta_id and item['tipo_precio'] == tipo_precio), 
-            None
-        )
-        
-        # Actualizar o agregar item
-        if item_existente:
-            item_existente['cantidad'] += cantidad
-        else:
-            carrito.append({
-                'galleta_id': galleta.id_galleta,
-                'nombre': galleta.nombre,
-                'precio': precio,
-                'tipo_precio': tipo_precio,
-                'cantidad': cantidad
-            })
-        
-        # Guardar en sesión
-        session['carrito'] = carrito
-        session.modified = True
-        
-        return jsonify({
-            'success': True, 
-            'carrito': session['carrito'],
-            'total': sum(item['precio'] * item['cantidad'] for item in session['carrito'])
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+    # Configurar fechas mínima y máxima para entrega
+    hoy = datetime.now().date()
+    min_date = hoy + timedelta(days=2)  # Mínimo 2 días después
+    max_date = hoy + timedelta(days=30)  # Máximo 30 días después
     
-    data = request.get_json()
-    # Resto del código igual que tienes actualmente...
-    return jsonify({'success': True, 'carrito': session['carrito']})
-
-@cliente_bp.route("/realizar_pedido", methods=["POST"])
-@cliente_required
-def realizar_pedido():
-    if 'carrito' not in session or not session['carrito']:
-        flash('El carrito está vacío', 'danger')
-        return redirect(url_for('cliente.menuCliente'))
+    # Preparar fechas para mostrar en formato dd/mm/yyyy
+    min_date_display = min_date.strftime('%d/%m/%Y')
+    max_date_display = max_date.strftime('%d/%m/%Y')
     
-    try:
-        # Crear el pedido principal
-        nuevo_pedido = Pedido(
-            idUsuario=session['user_id'],
-            estado='Pendiente',
-            direccionEntrega=request.form['direccion'],
-            telefonoContacto=request.form['telefono'],
-            notas=request.form.get('notas', ''),
-            total=sum(item['precio'] * item['cantidad'] for item in session['carrito'])
-        )
-        db.session.add(nuevo_pedido)
-        db.session.flush()  # Para obtener el ID del pedido
-        
-        # Agregar detalles del pedido
-        for item in session['carrito']:
-            detalle = DetallePedido(
-                idPedido=nuevo_pedido.idPedido,
-                idGalleta=item['galleta_id'],
-                cantidad=item['cantidad'],
-                precioUnitario=item['precio'],
-                subtotal=item['precio'] * item['cantidad']
+    # Obtener todas las galletas activas con sus precios y presentaciones
+    galletas_info = []
+    galletas_activas = Galletas.query.filter_by(activa=True).all()
+    
+    for galleta in galletas_activas:
+        precios = PreciosGalletas.query.filter_by(idGalletaFK=galleta.idGalleta).all()
+        for precio in precios:
+            presentacion = Presentaciones.query.get(precio.idPresentacionFK)
+            if presentacion:
+                galletas_info.append((galleta, presentacion, precio))
+    
+    if request.method == 'POST':
+        try:
+            # Obtener y validar fecha de entrega
+            fecha_entrega_str = request.form.get('fecha_entrega')
+            fecha_entrega = datetime.strptime(fecha_entrega_str, '%Y-%m-%d').date()
+            
+            # Validaciones de fecha
+            if fecha_entrega < min_date or fecha_entrega > max_date:
+                flash(f'La fecha de entrega debe ser entre {min_date_display} y {max_date_display}', 'error')
+                return render_template("cliente/menuCliente.html", 
+                                    galletas=galletas_info,
+                                    min_date=min_date.strftime('%Y-%m-%d'),
+                                    max_date=max_date.strftime('%Y-%m-%d'),
+                                    min_date_display=min_date_display,
+                                    max_date_display=max_date_display)
+            
+            # Validar que no sea fin de semana (sábado=5, domingo=6)
+            if fecha_entrega.weekday() >= 5:
+                flash('No realizamos entregas los fines de semana. Por favor seleccione un día entre semana.', 'error')
+                return render_template("cliente/menuCliente.html", 
+                                    galletas=galletas_info,
+                                    min_date=min_date.strftime('%Y-%m-%d'),
+                                    max_date=max_date.strftime('%Y-%m-%d'),
+                                    min_date_display=min_date_display,
+                                    max_date_display=max_date_display)
+            
+            # Crear nuevo pedido
+            nuevo_pedido = Pedidos(
+                idClienteFK=session['user_id'],
+                fechaPedido=datetime.now(),
+                fechaEntrega=fecha_entrega,
+                total=0,
+                estado='Pendiente',
+                observaciones=request.form.get('observaciones', '')
             )
-            db.session.add(detalle)
-        
-        # Registrar el estado inicial
-        seguimiento = SeguimientoPedido(
-            idPedido=nuevo_pedido.idPedido,
-            estadoNuevo='Pendiente',
-            idUsuarioCambio=session['user_id'],
-            comentarios='Pedido creado por el cliente'
-        )
-        db.session.add(seguimiento)
-        
-        db.session.commit()
-        session.pop('carrito', None)
-        
-        flash('¡Pedido realizado con éxito!', 'success')
-        return redirect(url_for('cliente.mis_pedidos'))
+            db.session.add(nuevo_pedido)
+            db.session.flush()
+            
+            # Procesar detalles del pedido
+            total = 0
+            for galleta_id, presentacion_id in zip(
+                request.form.getlist('galleta_id'), 
+                request.form.getlist('presentacion_id')
+            ):
+                cantidad = int(request.form.get(f'cantidad_{galleta_id}_{presentacion_id}', 0))
+                if cantidad > 0:
+                    precio = PreciosGalletas.query.filter_by(
+                        idGalletaFK=galleta_id,
+                        idPresentacionFK=presentacion_id
+                    ).first().precio
+                    
+                    subtotal = precio * cantidad
+                    total += subtotal
+                    
+                    detalle = DetallePedido(
+                        idPedidoFK=nuevo_pedido.idPedido,
+                        idGalletaFK=galleta_id,
+                        idPresentacionFK=presentacion_id,
+                        cantidad=cantidad,
+                        precioUnitario=precio,
+                        subtotal=subtotal
+                    )
+                    db.session.add(detalle)
+            
+            # Actualizar total del pedido
+            nuevo_pedido.total = total
+            db.session.commit()
+            
+            flash('¡Pedido realizado con éxito!', 'success')
+            return redirect(url_for('cliente.misPedidos'))
+            
+        except ValueError:
+            flash('Formato de fecha inválido. Por favor use el selector de fecha.', 'error')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al realizar el pedido: {str(e)}', 'error')
     
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error al realizar el pedido: {str(e)}', 'danger')
-        return redirect(url_for('cliente.menuCliente'))
+    return render_template("cliente/menuCliente.html", 
+                         galletas=galletas_info,
+                         min_date=min_date.strftime('%Y-%m-%d'),
+                         max_date=max_date.strftime('%Y-%m-%d'),
+                         min_date_display=min_date_display,
+                         max_date_display=max_date_display)
 
-@cliente_bp.route("/mis_pedidos")
+@cliente_bp.route("/misPedidos")
 @cliente_required
-def mis_pedidos():
-    pedidos = Pedido.query.filter_by(idUsuario=session['user_id']).order_by(Pedido.fechaPedido.desc()).all()
-    return render_template("mis_pedidos.html", pedidos=pedidos)
-
-@cliente_bp.route("/obtener_carrito", methods=["GET"])
-@cliente_required
-def obtener_carrito():
-    return jsonify(session.get('carrito', []))
-
-@cliente_bp.route("/eliminar_del_carrito", methods=["DELETE, POST"])
-@cliente_required
-def eliminar_del_carrito():
-    if 'carrito' not in session:
-        return jsonify({'success': False})
-    
-    data = request.get_json()
-    galleta_id = data['galleta_id']
-    tipo_precio = data['tipo_precio']
-    
-    session['carrito'] = [
-        item for item in session['carrito'] 
-        if not (item['galleta_id'] == galleta_id and item['tipo_precio'] == tipo_precio)
-    ]
-    session.modified = True
-    return jsonify({'success': True, 'carrito': session['carrito']})
+def misPedidos():
+    pedidos = Pedidos.query.filter_by(idClienteFK=session['user_id'])\
+                          .order_by(Pedidos.fechaPedido.desc())\
+                          .all()
+    return render_template("cliente/misPedidos.html", pedidos=pedidos)
