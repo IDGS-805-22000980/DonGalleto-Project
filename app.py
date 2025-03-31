@@ -49,12 +49,12 @@ if __name__ == "__main__":
         
         # Verificar y crear usuario de prueba
         try:
-            if not Usuarios.query.filter_by(email="ventas@example.com").first():
+            if not Usuarios.query.filter_by(email="admin@example.com").first():
                 usuario_prueba = Usuarios(
-                    nombre="Ventas Demo",
-                    email="ventas@example.com",
-                    password=generate_password_hash("ventas1234"),
-                    rol="ventas"
+                    nombre="Admin",
+                    email="admin@example.com",
+                    password=generate_password_hash("admin1234"),
+                    rol="Admin"
                 )
                 db.session.add(usuario_prueba)
                 db.session.commit()

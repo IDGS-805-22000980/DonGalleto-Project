@@ -44,17 +44,6 @@ def menuCliente():
                                     max_date=max_date.strftime('%Y-%m-%d'),
                                     min_date_display=min_date_display,
                                     max_date_display=max_date_display)
-            
-            # Validar que no sea fin de semana (sábado=5, domingo=6)
-            if fecha_entrega.weekday() >= 5:
-                flash('No realizamos entregas los fines de semana. Por favor seleccione un día entre semana.', 'error')
-                return render_template("cliente/menuCliente.html", 
-                                    galletas=galletas_info,
-                                    min_date=min_date.strftime('%Y-%m-%d'),
-                                    max_date=max_date.strftime('%Y-%m-%d'),
-                                    min_date_display=min_date_display,
-                                    max_date_display=max_date_display)
-            
             # Crear nuevo pedido
             nuevo_pedido = Pedidos(
                 idClienteFK=session['user_id'],
