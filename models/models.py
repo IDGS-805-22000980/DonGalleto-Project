@@ -84,9 +84,9 @@ class InventarioGalletas(db.Model):
     __tablename__ = 'InventarioGalletas'
     
     idInventarioGalleta = db.Column(db.Integer, primary_key=True)
-    idGalletaFK = db.Column(db.Integer, db.ForeignKey('Galletas.id'), nullable=False)
+    idGalletaFK = db.Column(db.Integer, db.ForeignKey('Galletas.idGalleta'), nullable=False)
     stock = db.Column(db.Integer, default=0, nullable=False)
-    fecha_prodfechaProduccionuccion = db.Column(db.Date, nullable=False)
+    fechaProduccion = db.Column(db.Date, nullable=False)
     fechaCaducidad = db.Column(db.Date, nullable=False)
     lote = db.Column(db.String(50))
     disponible = db.Column(db.Boolean, default=True)

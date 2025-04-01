@@ -56,7 +56,7 @@
                 .split('; ')
                 .find(row => row.startsWith('csrf_token='))
                 ?.split('=')[1];
-            
+
             if (!cookieToken) console.error("No se encontró el token CSRF");
             return cookieToken || '';
         }
@@ -65,7 +65,7 @@
         function actualizarColor(button) {
             const estado = button.getAttribute("data-estado");
             button.className = "btn estado-btn mt-auto";
-            
+
             if (estado === "Pendiente") button.classList.add("btn-danger");
             else if (estado === "Aprobada") button.classList.add("btn-primary");
             else if (estado === "Completada") {
@@ -100,7 +100,6 @@
                         body: JSON.stringify({
                             idGalleta: parseInt(galletaId),
                             nuevo_estado: nuevoEstado
-                            // No es necesario enviar csrf_token en el body
                         })
                     });
 
@@ -113,6 +112,9 @@
                     this.textContent = data.nuevo_estado;
                     this.setAttribute("data-estado", data.nuevo_estado);
                     actualizarColor(this);
+
+                    // Recargar la página después de cambiar el estado
+                    location.reload();
 
                 } catch (error) {
                     console.error("Error:", error);
@@ -140,9 +142,9 @@
                             "Content-Type": "application/json",
                             "X-CSRFToken": getCSRFToken()
                         },
-                        body: JSON.stringify({ 
-                            idGalleta: galletaId, 
-                            cantidad: cantidad 
+                        body: JSON.stringify({
+                            idGalleta: galletaId,
+                            cantidad: cantidad
                         })
                     });
 
@@ -156,6 +158,7 @@
             });
         });
     });
+
 </script>
 
 {% endblock %}
