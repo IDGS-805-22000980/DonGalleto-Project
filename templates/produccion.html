@@ -150,6 +150,7 @@
 
                     const data = await response.json();
                     alert(data.message || "Cantidad guardada exitosamente");
+                    location.reload(); // 🔄 Recarga la página automáticamente
 
                 } catch (error) {
                     console.error("Error:", error);
