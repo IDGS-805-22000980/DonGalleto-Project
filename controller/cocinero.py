@@ -9,14 +9,17 @@ chefCocinero = Blueprint('chefCocinero', __name__)
 @chefCocinero.route('/produccion')
 def produccion():
     galletas = (
-        db.session.query(Galletas, EstadoGalleta.estatus)
-        .join(EstadoGalleta, Galletas.idGalleta == EstadoGalleta.idGalletaFK)
-        .all()
-    )
-    
-    csrf_token = generate_csrf()  # Genera el token una sola vez
+    db.session.query(Galletas, EstadoGalleta.estatus)
+    .join(EstadoGalleta, Galletas.idGalleta == EstadoGalleta.idGalletaFK)
+    .join(InventarioGalletas, Galletas.idGalleta == InventarioGalletas.idGalletaFK)
+    .filter(InventarioGalletas.stock < 50)
+    .with_entities(Galletas, EstadoGalleta.estatus)  # Solo devolver estos dos valores
+    .all()
+)
+
+    csrf_token = generate_csrf()
     response = make_response(render_template('produccion.html', galletas=galletas, csrf_token=csrf_token))
-    response.set_cookie('csrf_token', csrf_token, httponly=True, samesite='Strict')  # Usa el mismo token
+    response.set_cookie('csrf_token', csrf_token, httponly=True, samesite='Strict')
     
     return response
 
