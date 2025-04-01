@@ -2,7 +2,7 @@
 {% block container %}
 
 <div class="container py-4">
-    <h2 class="text-center mb-4">Detalle del Pedido #{{ pedido.idPedido }}</h2>
+    <h2 class="text-center mb-4">Detalle del Pedido #{{ pedido.id }}</h2>
     
     <div class="card mb-4">
         <div class="card-header">
@@ -10,10 +10,10 @@
         </div>
         <div class="card-body">
             <p><strong>Cliente:</strong> {{ pedido.cliente.nombre }}</p>
-            <p><strong>Fecha Pedido:</strong> {{ pedido.fechaPedido.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p><strong>Fecha Pedido:</strong> {{ pedido.fecha_pedido.strftime('%d/%m/%Y %H:%M') }}</p>
             <p><strong>Fecha Entrega:</strong> 
-                {% if pedido.fechaEntrega %}
-                    {{ pedido.fechaEntrega.strftime('%d/%m/%Y') }}
+                {% if pedido.fecha_entrega %}
+                    {{ pedido.fecha_entrega.strftime('%d/%m/%Y') }}
                 {% else %}
                     -
                 {% endif %}
@@ -33,8 +33,7 @@
                 <thead>
                     <tr>
                         <th>Galleta</th>
-                        <th>Presentación</th>
-                        <th>Cantidad</th>
+                        <th>Cantidad (unidades)</th>
                         <th>Precio Unitario</th>
                         <th>Subtotal</th>
                     </tr>
@@ -43,9 +42,8 @@
                     {% for detalle in pedido.detalles %}
                     <tr>
                         <td>{{ detalle.galleta.nombre }}</td>
-                        <td>{{ detalle.presentacion.nombre }}</td>
                         <td>{{ detalle.cantidad }}</td>
-                        <td>${{ "%.2f"|format(detalle.precioUnitario) }}</td>
+                        <td>${{ "%.2f"|format(detalle.precio_unitario) }}</td>
                         <td>${{ "%.2f"|format(detalle.subtotal) }}</td>
                     </tr>
                     {% endfor %}

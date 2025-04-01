@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models.models import db, Usuarios, Galletas, Presentaciones, PreciosGalletas, Pedidos, DetallePedido, Ventas, DetalleVenta
+from models.models import db, Usuarios, Galleta, Pedido, DetallePedido, Venta, DetalleVenta
 from werkzeug.security import check_password_hash, generate_password_hash
 from models.formsAdmin import RegistrarEmpleadosForm, ModificarEmpleadosForm
 from controller.auth import admin_required
@@ -61,7 +61,7 @@ def modificar():
 
     if request.method == 'GET':
         id = request.args.get('id')
-        empleado = Usuarios.query.filter_by(idUsuario=id).first()
+        empleado = Usuarios.query.filter_by(id=id).first()
         
         if not empleado:
             flash('Empleado no encontrado', 'error')
@@ -78,14 +78,14 @@ def modificar():
 
     if request.method == 'POST' and form.validate():
         id = form.id.data
-        empleado = Usuarios.query.filter_by(idUsuario=id).first()
+        empleado = Usuarios.query.filter_by(id=id).first()
         
         if not empleado:
             flash('Empleado no encontrado', 'error')
             return redirect(url_for('admin.ABCempleados'))
         
         # Verificar si el email ya existe (excepto para este usuario)
-        if Usuarios.query.filter(Usuarios.email == form.email.data, Usuarios.idUsuario != id).first():
+        if Usuarios.query.filter(Usuarios.email == form.email.data, Usuarios.id != id).first():
             flash('Este email ya está registrado por otro usuario', 'error')
             return redirect(url_for('admin.modificar', id=id))
         

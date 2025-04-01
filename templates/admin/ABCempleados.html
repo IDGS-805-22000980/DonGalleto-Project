@@ -37,10 +37,10 @@
                             <td class="align-middle">{{ usu.telefono }}</td>
                             <td class="align-middle text-center">
                                 <div class="d-flex justify-content-center gap-2">
-                                    <a href="{{ url_for('admin.modificar', id=usu.idUsuario) }}" class="btn btn-sm btn-primary">
+                                    <a href="{{ url_for('admin.modificar', id=usu.id) }}" class="btn btn-sm btn-primary">
                                         <i class="bi bi-pencil-square"></i> Modificar
                                     </a>
-                                    <form action="{{ url_for('admin.eliminar', id=usu.idUsuario) }}" method="POST" style="display: inline;">
+                                    <form action="{{ url_for('admin.eliminar', id=usu.id) }}" method="POST" style="display: inline;">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <button type="submit" class="btn btn-sm btn-danger"
                                                 onclick="return confirm('¿Estás seguro de eliminar este empleado?');">

@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models.models import db, Usuarios, Galletas, Presentaciones, PreciosGalletas, Pedidos, DetallePedido, Ventas, DetalleVenta
+from models.models import db, Usuarios, Galleta, Pedido, DetallePedido, Venta, DetalleVenta
 from werkzeug.security import check_password_hash, generate_password_hash
 from models.formsLogin import LoginForm, RegistrarClientesForm
 from datetime import timedelta
@@ -23,7 +23,7 @@ def login():
         elif not check_password_hash(usuario.password, password):
             flash('Credenciales incorrectas', 'error')
         else:
-            session['user_id'] = usuario.idUsuario
+            session['user_id'] = usuario.id
             session['user_rol'] = usuario.rol
             session['user_nombre'] = usuario.nombre
             
@@ -83,7 +83,7 @@ def registrarClientes():
             db.session.commit()
             
             # Autenticar al usuario directamente después del registro
-            session['user_id'] = nuevo_usuario.idUsuario
+            session['user_id'] = nuevo_usuario.id
             session['user_rol'] = nuevo_usuario.rol
             session['user_nombre'] = nuevo_usuario.nombre
             

@@ -3,7 +3,7 @@ from flask import flash
 from flask_wtf.csrf import CSRFProtect
 from flask import g
 from models.config import DevelopmentConfig
-from models.models import db, Usuarios, Galletas, Presentaciones, PreciosGalletas, Pedidos, DetallePedido, Ventas, DetalleVenta
+from models.models import db, Usuarios, Galleta, Pedido, DetallePedido, Venta, DetalleVenta
 from models.forms import GalletaForm
 from werkzeug.security import generate_password_hash
 import models.forms
@@ -49,12 +49,12 @@ if __name__ == "__main__":
         
         # Verificar y crear usuario de prueba
         try:
-            if not Usuarios.query.filter_by(email="admin@example.com").first():
+            if not Usuarios.query.filter_by(email="ventas@example.com").first():
                 usuario_prueba = Usuarios(
-                    nombre="Admin",
-                    email="admin@example.com",
-                    password=generate_password_hash("admin1234"),
-                    rol="Admin"
+                    nombre="ventas",
+                    email="ventas@example.com",
+                    password=generate_password_hash("ventas1234"),
+                    rol="Ventas"
                 )
                 db.session.add(usuario_prueba)
                 db.session.commit()
