@@ -15,17 +15,19 @@
                     <tr>
                         <th>Nombre de la Galleta</th>
                         <th>Cantidad en Inventario</th>
+                        <th>Presentación</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for galleta, cantidad in inventario %}
+                    {% for galleta in inventario %}
                     <tr>
-                        <td>{{ galleta }}</td>
-                        <td>{{ cantidad }}</td>
+                        <td>{{ galleta.nombre }}</td>
+                        <td>{{ galleta.stock }}</td>
+                        <td>{{ galleta.descripcion }}</td> <!-- Cambiado de presentacion a descripcion -->
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="2">No hay galletas en inventario.</td>
+                        <td colspan="3">No hay galletas en inventario.</td> <!-- Ajustado a 3 columnas -->
                     </tr>
                     {% endfor %}
                 </tbody>
