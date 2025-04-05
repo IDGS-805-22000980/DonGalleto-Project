@@ -1,1 +1,18 @@
-env
+# Ignorar archivos compilados de Python
+__pycache__/
+*.py[cod]
+
+# Archivos de entorno
+.env
+*.env
+
+# Archivos de logs
+*.log
+
+# Configuración de IDEs
+.vscode/
+.idea/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
